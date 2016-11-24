@@ -28,11 +28,11 @@ uint32_t softwhite = strip.Color(224,224,224);
 
 uint32_t pallette[] = {red, orange, yellow, green, skyblue, blue, violet, pink, softwhite};
 uint32_t tempColor[] = {
-     0x0000ff //0 or below
-    ,0x5500ff //10
-    ,0xaa00ff //20
+     0x00ffff //0 or below
+    ,0x0000ff //10
+    ,0x5500ff //20
     ,0xff00ff //30
-    ,0xff00aa //40
+    ,0xff0090 //40
     ,0xff0000 //50
     ,0xffaa00 //60
     ,0xffff00 //70
@@ -46,63 +46,81 @@ String windDir = "NORTH";
 void setup() {
   strip.begin();
   strip.show(); // Initialize all pixels to 'off'
-  
+
   Particle.function("windDir", setWindDirection);
   Particle.function("setHiTemp", setHighTemp);
   Particle.function("setLoTemp", setLowTemp);
+  Particle.function("night", night);
   Serial.begin(9600);
 }
 void loop() {
-    
-    if (lowTemp < 0) {
-        lowTemp = 0;
-    }
-    
-    if (highTemp > 100) {
-        highTemp = 100;
-    }
-    
-    int loIndex = lowTemp / 10;
-    int hiIndex = highTemp / 10;
-    
-    int colorSteps = hiIndex - loIndex;
-    
-    int i = 0;
-    for (int j= 0; j < strip.numPixels(); j++) {
-        if (j % (100 / colorSteps) == 0) {
-            i++;
-        }
-        
-        strip.setPixelColor(j, tempColor[loIndex + i]);
-    }
-    strip.show();
+
+
 }
-  
+
 void setChancePrecip(const char *event, const char *data) {
   String precip = data;
   chancePrecip = precip.toInt();
 }
 
 int setHighTemp(String data) {
+  Particle.publish("info" "High Temperature: " + data);
   String hi = data;
   highTemp = hi.toInt();
+
+  showTemperature();
+
   return highTemp;
 }
 
 int setLowTemp(String data) {
+  Particle.publish("info" "Low Temperature: " + data);
   String lo = data;
   lowTemp = lo.toInt();
+
+  showTemperature();
+
   return lowTemp;
 }
-      
+
+void showTemperature() {
+    if (lowTemp < 0) {
+        lowTemp = 0;
+    }
+
+    if (highTemp > 100) {
+        highTemp = 100;
+    }
+
+    int loIndex = lowTemp / 10;
+    int hiIndex = highTemp / 10;
+
+    int colorSteps = hiIndex - loIndex;
+
+    int i = 0;
+    for (int j= 0; j < strip.numPixels(); j++) {
+        if (j % (100 / colorSteps) == 0) {
+            i++;
+        }
+
+        strip.setPixelColor(j, tempColor[loIndex + i]);
+    }
+    strip.show();
+}
+
+int night(String data) {
+    Particle.publish("info", "Entering Night Mode: " + data);
+    dark();
+    return 1;
+}
 void dark() {
     for (int j= 0; j < strip.numPixels(); j++) {
         strip.setPixelColor(j, 0, 0, 0);
     }
     strip.show();
 }
-  
-  
+
+
 
 //Direction collection array indices
 //N  - 0
@@ -146,19 +164,21 @@ int northEast[] =
   {
       1,2,3, 19,20,21, 39,40,41, 56,57, 72,73, 80, 85,92,97,97
   };
-  
-  
+
+
 void showWindDirection(int myArr[]) {
-    //dark();
+    dark();
+    showTemperature();
       for (int j = 0; j < 18; j++) {
           strip.setPixelColor(myArr[j], softwhite);
       }
       strip.show();
   }
-      
+
 int setWindDirection(String dir) {
     windDir = dir;
     String direction = dir.toUpperCase();
+    Particle.publish("info", direction);
     if (direction == "NORTH") {
         showWindDirection(north);
     } else if (direction.equals("NORTHEAST")) {
@@ -178,7 +198,7 @@ int setWindDirection(String dir) {
     } else {
         Particle.publish("windErr", direction);
     }
-    
+
     return 1;
 }
 
@@ -189,7 +209,6 @@ int setWindDirection(String dir) {
 //     String windDir = weather.substring(0, index_1);
 //     // String windStr = weather.substring(index_1+1, weather.length())
 //     int windSpeed = weather.substring(index_1+1, weather.length()).toInt();
-    
+
 //     return 1;
 // }
-
