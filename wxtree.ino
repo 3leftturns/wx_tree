@@ -14,7 +14,7 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(PIXEL_COUNT, PIXEL_PIN, PIXEL_TYPE);
 int chancePrecip = 0;
 int highTemp = 100;
 int lowTemp = 0;
-
+bool nightMode = false;
 
 uint32_t red = strip.Color(0,255,0);
 uint32_t orange = strip.Color(127,0,255);
@@ -46,18 +46,21 @@ String windDir = "NORTH";
 void setup() {
   strip.begin();
   strip.show(); // Initialize all pixels to 'off'
-
+  
   Particle.function("windDir", setWindDirection);
   Particle.function("setHiTemp", setHighTemp);
   Particle.function("setLoTemp", setLowTemp);
   Particle.function("night", night);
+  Particle.function("tFollower", twitterFollower);
+  Particle.function("newEmail", newGmail);
+  Particle.function("home", daddysHome);
   Serial.begin(9600);
 }
 void loop() {
-
-
+    
+    
 }
-
+  
 void setChancePrecip(const char *event, const char *data) {
   String precip = data;
   chancePrecip = precip.toInt();
@@ -67,9 +70,9 @@ int setHighTemp(String data) {
   Particle.publish("info" "High Temperature: " + data);
   String hi = data;
   highTemp = hi.toInt();
-
+  
   showTemperature();
-
+  
   return highTemp;
 }
 
@@ -77,50 +80,52 @@ int setLowTemp(String data) {
   Particle.publish("info" "Low Temperature: " + data);
   String lo = data;
   lowTemp = lo.toInt();
-
+  
   showTemperature();
-
+  
   return lowTemp;
 }
 
 void showTemperature() {
+    nightMode = false;
     if (lowTemp < 0) {
         lowTemp = 0;
     }
-
+    
     if (highTemp > 100) {
         highTemp = 100;
     }
-
+    
     int loIndex = lowTemp / 10;
     int hiIndex = highTemp / 10;
-
+    
     int colorSteps = hiIndex - loIndex;
-
+    
     int i = 0;
     for (int j= 0; j < strip.numPixels(); j++) {
         if (j % (100 / colorSteps) == 0) {
             i++;
         }
-
+        
         strip.setPixelColor(j, tempColor[loIndex + i]);
     }
     strip.show();
 }
-
+   
 int night(String data) {
     Particle.publish("info", "Entering Night Mode: " + data);
     dark();
+    nightMode = true;
     return 1;
-}
+}   
 void dark() {
     for (int j= 0; j < strip.numPixels(); j++) {
         strip.setPixelColor(j, 0, 0, 0);
     }
     strip.show();
 }
-
-
+  
+  
 
 //Direction collection array indices
 //N  - 0
@@ -164,17 +169,19 @@ int northEast[] =
   {
       1,2,3, 19,20,21, 39,40,41, 56,57, 72,73, 80, 85,92,97,97
   };
-
-
+  
+  
 void showWindDirection(int myArr[]) {
     dark();
+    if (!nightMode) {
     showTemperature();
       for (int j = 0; j < 18; j++) {
           strip.setPixelColor(myArr[j], softwhite);
       }
       strip.show();
+    }
   }
-
+      
 int setWindDirection(String dir) {
     windDir = dir;
     String direction = dir.toUpperCase();
@@ -198,7 +205,67 @@ int setWindDirection(String dir) {
     } else {
         Particle.publish("windErr", direction);
     }
+    
+    return 1;
+}
 
+int twitterFollower(String data) {
+    Particle.publish("info", "Twitter Follower: " + data);
+    for (int i = 0; i < strip.numPixels(); i++ ) {
+        strip.setPixelColor(i, red);
+        if (i > 0) {
+            strip.setPixelColor(i-1, blue);
+                if (i % 2) {
+                strip.setPixelColor(i-1, softwhite);
+            }
+        }
+
+        strip.show();
+        delay(100);
+    }
+    delay(2000);
+    showTemperature();
+    return 1;
+}
+
+int newGmail(String data) {
+    Particle.publish("info", "New Gmail from: " + data);
+    for (int i = strip.numPixels(); i > 0; i-- ) {
+        strip.setPixelColor(i, green);
+        if (i < strip.numPixels()) {
+            strip.setPixelColor(i+1, yellow);
+        }
+        strip.show();
+        delay(100);
+    }
+    delay(2000);
+    showTemperature();
+    return 1;
+}
+
+int daddysHome(String data) {
+    Particle.publish("info", "Daddy's Home");
+    
+    for (int i = 0; i <= 5; i++) {
+    dark();
+    delay(100);
+    showTemperature();
+    delay(100);
+    }
+    
+    String dirArr[] = {"north", "northeast", "east", "southeast", "south", "southwest", "west", "northwest"};
+    
+    int spin = 5;
+    while (spin > 0) {
+        for (int j = 0; j < 8; j++) {
+            setWindDirection(dirArr[j]);
+            delay(100);
+            showTemperature();
+            delay(100);
+        }
+        spin--;
+    }
+    
     return 1;
 }
 
@@ -209,6 +276,15 @@ int setWindDirection(String dir) {
 //     String windDir = weather.substring(0, index_1);
 //     // String windStr = weather.substring(index_1+1, weather.length())
 //     int windSpeed = weather.substring(index_1+1, weather.length()).toInt();
-
+    
 //     return 1;
+// }
+
+//UTIL METHODS
+// String[] split(String input, Char delimiter, String[] splitArr) {
+//     int i = 0;
+//     int strIndex = input.indexOf(delimiter);
+//     String strArr[] = {};
+//     String str = input.substring(i, strIndex);
+//     strArr[strArr.length() + 1] = str;
 // }
