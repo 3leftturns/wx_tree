@@ -210,6 +210,7 @@ int setWindDirection(String dir) {
 }
 
 int twitterFollower(String data) {
+    if (!nightMode) {
     Particle.publish("info", "Twitter Follower: " + data);
     for (int i = 0; i < strip.numPixels(); i++ ) {
         strip.setPixelColor(i, red);
@@ -225,10 +226,12 @@ int twitterFollower(String data) {
     }
     delay(2000);
     showTemperature();
+    }
     return 1;
 }
 
 int newGmail(String data) {
+    if (!nightMode) {
     Particle.publish("info", "New Gmail from: " + data);
     for (int i = strip.numPixels(); i > 0; i-- ) {
         strip.setPixelColor(i, green);
@@ -240,12 +243,14 @@ int newGmail(String data) {
     }
     delay(2000);
     showTemperature();
+    }
     return 1;
 }
 
 int daddysHome(String data) {
     Particle.publish("info", "Daddy's Home");
     
+    if (!nightMode) {
     for (int i = 0; i <= 5; i++) {
     dark();
     delay(100);
@@ -264,6 +269,7 @@ int daddysHome(String data) {
             delay(100);
         }
         spin--;
+    }
     }
     
     return 1;
